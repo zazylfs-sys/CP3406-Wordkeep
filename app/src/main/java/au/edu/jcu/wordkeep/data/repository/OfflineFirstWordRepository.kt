@@ -6,7 +6,6 @@ import au.edu.jcu.wordkeep.data.local.dao.WordDao
 import au.edu.jcu.wordkeep.data.local.entity.LookAlikeEntity
 import au.edu.jcu.wordkeep.data.local.entity.WordEntity
 import au.edu.jcu.wordkeep.data.local.toDictionaryEntry
-import au.edu.jcu.wordkeep.data.local.toDomain
 import au.edu.jcu.wordkeep.data.local.toSenseEntities
 import au.edu.jcu.wordkeep.data.local.toStudyWord
 import au.edu.jcu.wordkeep.data.local.toWordEntity
@@ -24,6 +23,9 @@ import au.edu.jcu.wordkeep.domain.model.WordOrigin
 import au.edu.jcu.wordkeep.domain.quiz.DistractorFilter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -74,7 +76,7 @@ class OfflineFirstWordRepository @Inject constructor(
     override suspend fun save(entry: DictionaryEntry): Long = withContext(io) {
         val existing = wordDao.findByText(entry.text)
         if (existing != null) {
-            if (existing.fetchState != FetchState.READY) storeContent(existing, entry)
+            if (existing.fetchState != FetchState.READY) storeContent(existing.id, entry)
             return@withContext existing.id
         }
         wordDao.insertWithContent(entry.toWordEntity(WordOrigin.LEARNER, clock.instant()), entry.toSenseEntities())
@@ -98,30 +100,42 @@ class OfflineFirstWordRepository @Inject constructor(
         }.count { it != -1L }
     }
 
+    /**
+     * Downloads in small parallel batches (the API answers slowly, one word at a time is ~60 s
+     * for the starter list) and stops at the first connection problem instead of failing every
+     * remaining word. Each word is saved as soon as it arrives, so an interrupted download resumes.
+     */
     override suspend fun downloadPending(onProgress: (done: Int, total: Int) -> Unit): DownloadSummary =
         withContext(io) {
             val pending = wordDao.getPending()
             var downloaded = 0
             var notFound = 0
-            pending.forEachIndexed { index, word ->
-                when (val result = fetch(word.text)) {
-                    is Fetched.Entry -> {
-                        storeContent(word, result.entry)
-                        downloaded++
-                    }
-                    Fetched.Missing -> {
-                        wordDao.update(word.copy(fetchState = FetchState.NOT_FOUND, fetchedAt = clock.instant()))
-                        notFound++
-                    }
-                    // Stop at the first connection problem instead of failing every remaining word.
-                    is Fetched.Failed -> return@withContext DownloadSummary(
-                        downloaded = downloaded,
-                        notFound = notFound,
-                        remaining = pending.size - index,
-                        stoppedReason = result.reason,
-                    )
+            var done = 0
+            onProgress(0, pending.size)
+            for (batch in pending.chunked(PARALLEL_DOWNLOADS)) {
+                val results = coroutineScope {
+                    batch.map { word -> async { word to fetch(word.text) } }.awaitAll()
                 }
-                onProgress(index + 1, pending.size)
+                var stopped: LookupResult.Reason? = null
+                for ((word, result) in results) {
+                    when (result) {
+                        is Fetched.Entry -> {
+                            storeContent(word.id, result.entry)
+                            downloaded++
+                            done++
+                        }
+                        Fetched.Missing -> {
+                            wordDao.updateFetchState(word.id, FetchState.NOT_FOUND, clock.instant())
+                            notFound++
+                            done++
+                        }
+                        is Fetched.Failed -> stopped = result.reason
+                    }
+                }
+                onProgress(done, pending.size)
+                if (stopped != null) {
+                    return@withContext DownloadSummary(downloaded, notFound, pending.size - done, stopped)
+                }
             }
             DownloadSummary(downloaded, notFound, remaining = 0)
         }
@@ -138,8 +152,10 @@ class OfflineFirstWordRepository @Inject constructor(
         val cached = lookAlikeDao.forWord(word.id)
         if (cached.isNotEmpty() || isOfflineMode()) return@withContext cached
         try {
-            val candidates = datamuseApi.spelledLike(word.text).map { it.word } +
-                datamuseApi.soundsLike(word.text).map { it.word }
+            val spelled = datamuseApi.spelledLike(word.text).map { it.word }
+            // Check again: offline mode may have been switched on between the two requests.
+            val sounds = if (isOfflineMode()) emptyList() else datamuseApi.soundsLike(word.text).map { it.word }
+            val candidates = spelled + sounds
             val usable = DistractorFilter.filter(word.text, candidates).take(MAX_LOOK_ALIKES)
             lookAlikeDao.insertAll(usable.map { LookAlikeEntity(word.id, it) })
             usable
@@ -151,15 +167,15 @@ class OfflineFirstWordRepository @Inject constructor(
         }
     }
 
-    private suspend fun storeContent(word: WordEntity, entry: DictionaryEntry) {
-        val updated = word.copy(
+    private suspend fun storeContent(wordId: Long, entry: DictionaryEntry) {
+        wordDao.replaceContent(
+            id = wordId,
             phonetic = entry.phonetic,
             audioUrls = entry.audioUrls,
             alternateSpellings = entry.alternateSpellings,
-            fetchState = FetchState.READY,
             fetchedAt = clock.instant(),
+            senses = entry.toSenseEntities(wordId),
         )
-        wordDao.replaceContent(updated, entry.toSenseEntities(word.id))
     }
 
     private suspend fun fetch(text: String): Fetched {
@@ -190,6 +206,7 @@ class OfflineFirstWordRepository @Inject constructor(
 
     companion object {
         private const val MAX_LOOK_ALIKES = 8
+        private const val PARALLEL_DOWNLOADS = 4
         private val allowed = Regex("^[a-z][a-z' -]{0,44}$")
 
         /** Lower-cases and trims a query; returns null for input that cannot be a word. */

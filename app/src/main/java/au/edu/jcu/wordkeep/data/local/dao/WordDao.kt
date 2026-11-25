@@ -10,7 +10,9 @@ import au.edu.jcu.wordkeep.data.local.entity.CardEntity
 import au.edu.jcu.wordkeep.data.local.entity.SenseEntity
 import au.edu.jcu.wordkeep.data.local.entity.WordEntity
 import au.edu.jcu.wordkeep.data.local.entity.WordWithDetails
+import au.edu.jcu.wordkeep.domain.model.FetchState
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 
 @Dao
 interface WordDao {
@@ -64,12 +66,44 @@ interface WordDao {
         return id
     }
 
-    /** Replaces the downloaded dictionary content of an existing word. Progress is untouched. */
+    /**
+     * Updates only the dictionary-owned columns, so a download never overwrites the learner's note.
+     * Returns the number of rows changed (0 if the word was deleted meanwhile).
+     */
+    @Query(
+        """
+        UPDATE words SET phonetic = :phonetic, audio_urls = :audioUrls,
+        alternate_spellings = :alternateSpellings, fetch_state = 'READY', fetched_at = :fetchedAt
+        WHERE id = :id
+        """
+    )
+    suspend fun updateDictionaryContent(
+        id: Long,
+        phonetic: String?,
+        audioUrls: List<String>,
+        alternateSpellings: List<String>,
+        fetchedAt: Instant,
+    ): Int
+
+    @Query("UPDATE words SET fetch_state = :state, fetched_at = :fetchedAt WHERE id = :id")
+    suspend fun updateFetchState(id: Long, state: FetchState, fetchedAt: Instant): Int
+
+    /**
+     * Replaces the downloaded dictionary content of an existing word. Progress and notes are
+     * untouched. If the word was deleted while its definition was downloading, nothing is written.
+     */
     @Transaction
-    suspend fun replaceContent(word: WordEntity, senses: List<SenseEntity>) {
-        update(word)
-        deleteSenses(word.id)
-        insertSenses(senses.map { it.copy(wordId = word.id) })
+    suspend fun replaceContent(
+        id: Long,
+        phonetic: String?,
+        audioUrls: List<String>,
+        alternateSpellings: List<String>,
+        fetchedAt: Instant,
+        senses: List<SenseEntity>,
+    ) {
+        if (updateDictionaryContent(id, phonetic, audioUrls, alternateSpellings, fetchedAt) == 0) return
+        deleteSenses(id)
+        insertSenses(senses.map { it.copy(wordId = id) })
     }
 
     @Query("UPDATE words SET note = :note WHERE id = :id")

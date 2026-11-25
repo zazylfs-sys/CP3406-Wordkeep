@@ -61,3 +61,6 @@ Icon?
 /*.zip
 
 # Room schema files ARE committed (app/schemas) so migrations can be tested
+
+# Gradle build output in every module
+build/
