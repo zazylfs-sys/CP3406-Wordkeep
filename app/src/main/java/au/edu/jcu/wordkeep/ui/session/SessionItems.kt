@@ -68,6 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
@@ -435,8 +436,11 @@ fun SpellingContent(
     val focus = remember { FocusRequester() }
     LaunchedEffect(word.id) { runCatching { focus.requestFocus() } }
 
+    // The input and its buttons are pinned above the keyboard; feedback goes at the top of the
+    // scrolling area, so both stay visible while typing on a small phone.
     ItemLayout(
         body = {
+            SpellingFeedback(item, playback, actions)
             PaperCard(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceContainerLowest) {
                 Column(
                     Modifier.fillMaxWidth(),
@@ -477,6 +481,8 @@ fun SpellingContent(
                     }
                 }
             }
+        },
+        actions = {
             OutlinedTextField(
                 value = item.attempt,
                 onValueChange = actions.onAttemptChange,
@@ -484,29 +490,33 @@ fun SpellingContent(
                 singleLine = true,
                 label = { Text("Your spelling") },
                 textStyle = MaterialTheme.typography.headlineSmall,
+                // Keyboard suggestions would show the answer, and normal keyboards ignore "no
+                // suggestions" hints. A password-type keyboard shows none (and does not learn the
+                // attempts). The text stays visible and is not marked as a password, because the
+                // field has no password transformation, so TalkBack still reads each letter.
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.None,
                     autoCorrectEnabled = false,
-                    keyboardType = KeyboardType.Text,
+                    keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done,
                 ),
+                visualTransformation = VisualTransformation.None,
                 keyboardActions = KeyboardActions(onDone = { actions.onSubmitSpelling() }),
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focus),
             )
-            SpellingFeedback(item, playback, actions)
-        },
-        actions = {
             if (item.finished) {
                 Button(onClick = actions.onNext, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Next") }
             } else {
-                Button(
-                    onClick = actions.onSubmitSpelling,
-                    enabled = item.attempt.isNotBlank(),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-                ) { Text(if (item.canRetry) "Check again" else "Check") }
-                TextButton(onClick = actions.onGiveUp, modifier = Modifier.fillMaxWidth()) { Text("Show me the spelling") }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = actions.onGiveUp, modifier = Modifier.heightIn(min = 52.dp)) { Text("Show me") }
+                    Button(
+                        onClick = actions.onSubmitSpelling,
+                        enabled = item.attempt.isNotBlank(),
+                        modifier = Modifier.weight(1f).heightIn(min = 52.dp),
+                    ) { Text(if (item.canRetry) "Check again" else "Check") }
+                }
             }
         },
     )

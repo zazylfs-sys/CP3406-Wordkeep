@@ -119,6 +119,15 @@ class SessionScreenTest {
     }
 
     @Test
+    fun spelling_fieldIsNotAPasswordForScreenReaders() {
+        show(SessionUiState.Active(StudyMode.LISTEN_AND_SPELL, 0, 5, SessionItem.Spelling(word, attempt = "hypo")))
+        // The keyboard is password-type (no suggestions), but TalkBack must still read the letters.
+        compose.onNodeWithText("Your spelling")
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Password))
+        compose.onNodeWithText("hypo").assertIsDisplayed()
+    }
+
+    @Test
     fun spelling_nearMissFeedbackIsAnnouncedPolitely() {
         val nearMiss = SpellingVerdict.NearMiss(1, listOf(LetterMark('a', LetterMark.Status.MATCHED)))
         show(

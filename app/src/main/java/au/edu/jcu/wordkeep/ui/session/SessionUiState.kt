@@ -27,7 +27,8 @@ sealed interface SessionUiState {
         val total: Int,
         val item: SessionItem,
     ) : SessionUiState {
-        val progress: Float get() = position.toFloat() / total.coerceAtLeast(1)
+        /** Matches the "3 of 10" label: the current item counts as reached. */
+        val progress: Float get() = (position + 1).toFloat() / total.coerceAtLeast(1)
     }
 
     data class Finished(override val mode: StudyMode, val summary: SessionSummary) : SessionUiState

@@ -3,6 +3,8 @@ package au.edu.jcu.wordkeep.data.audio
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import au.edu.jcu.wordkeep.domain.model.Accent
@@ -40,6 +42,7 @@ class AndroidPronouncer @Inject constructor(
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
     private var player: MediaPlayer? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var pendingSpeech: PendingSpeech? = null
@@ -96,6 +99,14 @@ class AndroidPronouncer @Inject constructor(
                 true
             }
             mediaPlayer.prepareAsync()
+            // A slow connection (or a device without audio output) can leave the recording
+            // preparing forever; after a few seconds use the device voice instead.
+            mainHandler.postDelayed({
+                if (player === mediaPlayer && _state.value == PlaybackState.LOADING) {
+                    releasePlayer()
+                    speak(text, locale, allowNetwork = true)
+                }
+            }, RECORDING_TIMEOUT_MS)
         } catch (e: Exception) {
             releasePlayer()
             speak(text, locale, allowNetwork = true)
@@ -154,6 +165,7 @@ class AndroidPronouncer @Inject constructor(
     }
 
     private fun releasePlayer() {
+        mainHandler.removeCallbacksAndMessages(null)
         player?.run {
             setOnPreparedListener(null)
             setOnCompletionListener(null)
@@ -165,5 +177,6 @@ class AndroidPronouncer @Inject constructor(
 
     private companion object {
         const val UTTERANCE_ID = "wordkeep-word"
+        const val RECORDING_TIMEOUT_MS = 8_000L
     }
 }

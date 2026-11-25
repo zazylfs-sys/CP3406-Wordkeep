@@ -60,10 +60,10 @@ class FakeDictionaryApi : DictionaryApi {
 }
 
 class FakeDatamuseApi : DatamuseApi {
-    override suspend fun spelledLike(pattern: String, max: Int) =
-        listOf("alpha", "bravo", "charlie").map { DatamuseWordDto(it) }
+    override suspend fun spelledLike(pattern: String, max: Int, metadata: String) =
+        listOf("alpha", "bravo", "charlie").map { DatamuseWordDto(it, tags = listOf("f:20.0")) }
 
-    override suspend fun soundsLike(word: String, max: Int) = emptyList<DatamuseWordDto>()
+    override suspend fun soundsLike(word: String, max: Int, metadata: String) = emptyList<DatamuseWordDto>()
 }
 
 @Module

@@ -12,11 +12,16 @@ import kotlin.math.ceil
  * in the original description) while recall
  * succeeds, and falls back to 1 day when it fails. The ease factor drifts with answer quality
  * but never drops below [MIN_EASE], so difficult words are not scheduled into oblivion.
+ *
+ * One addition to the original: "Easy" on a word's very first review schedules it
+ * [EASY_FIRST_INTERVAL] days ahead (as Anki does), so a learner who already knows a new word is
+ * not asked about it again tomorrow. Without this, all four buttons on a new card would say "1 day".
  */
 object Sm2Scheduler {
 
     const val MIN_EASE = 1.3
     private const val FIRST_INTERVAL = 1
+    const val EASY_FIRST_INTERVAL = 4
     private const val SECOND_INTERVAL = 6
 
     fun schedule(state: ReviewState, grade: Grade, today: LocalDate): ReviewState {
@@ -26,7 +31,7 @@ object Sm2Scheduler {
 
         val (repetitions, interval) = if (grade.isPass) {
             val next = when (state.repetitions) {
-                0 -> FIRST_INTERVAL
+                0 -> if (grade == Grade.EASY) EASY_FIRST_INTERVAL else FIRST_INTERVAL
                 1 -> SECOND_INTERVAL
                 else -> roundUp(state.intervalDays * ease)
             }
