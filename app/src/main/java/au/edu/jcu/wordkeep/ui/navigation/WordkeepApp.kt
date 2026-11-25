@@ -23,6 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
+import androidx.navigation.toRoute
 import au.edu.jcu.wordkeep.ui.home.HomeRoute as HomeDestination
 import au.edu.jcu.wordkeep.ui.library.LibraryRoute as LibraryDestination
 import au.edu.jcu.wordkeep.ui.onboarding.OnboardingRoute as OnboardingDestination
@@ -97,13 +98,15 @@ fun WordkeepApp(
                     }
                 }
                 composable<WordDetailRoute> {
-                    WordDetailDestination(onBack = { navController.popBackStack() })
+                    WordDetailDestination(onBack = { navController.navigateUp() })
                 }
                 composable<LookupRoute>(
                     deepLinks = listOf(navDeepLink<LookupRoute>(basePath = LOOKUP_DEEP_LINK)),
                 ) {
                     LookupDestination(
-                        onBack = { navController.popBackStack() },
+                        // navigateUp, not popBackStack: after an external deep link this may be the only
+                        // screen, and Up then opens the app's own hierarchy instead of a blank screen.
+                        onBack = { navController.navigateUp() },
                         // Replace the look-up with the saved word, so Back does not return to a stale result.
                         onOpenWord = { id ->
                             navController.navigate(WordDetailRoute(id)) { popUpTo<LookupRoute> { inclusive = true } }
@@ -123,16 +126,21 @@ fun WordkeepApp(
                 }
                 composable<YourDataRoute> {
                     YourDataDestination(
-                        onBack = { navController.popBackStack() },
-                        // After erasing everything, start again from the first-run screen with an empty back stack.
+                        onBack = { navController.navigateUp() },
+                        // After erasing everything, start again from the first-run screen. Saved tab
+                        // stacks are cleared too, so no screen showing deleted data can be restored.
                         onDeleted = {
+                            navController.clearBackStack<WordsGraph>()
+                            navController.clearBackStack<StatsRoute>()
+                            navController.clearBackStack<SettingsGraph>()
                             navController.navigate(OnboardingRoute) { popUpTo(navController.graph.id) { inclusive = true } }
                         },
                     )
                 }
             }
-            composable<SessionRoute> {
+            composable<SessionRoute> { entry ->
                 SessionDestination(
+                    mode = entry.toRoute<SessionRoute>().mode,
                     // The finished session is removed from the back stack: Back from the summary goes home.
                     onFinished = { mode, summary ->
                         navController.navigate(
@@ -172,8 +180,21 @@ private fun NavDestination?.isOnTab(tab: TopLevelDestination): Boolean =
 /**
  * Standard tab navigation: one copy of each tab on the stack, each tab keeps its own back stack
  * (saveState / restoreState), and Today is always the root so Back eventually exits from there.
+ *
+ * Today is special: it is the root, so selecting it simply pops back to it. Navigating to it with
+ * restoreState would bring back whatever screen was just popped from above it.
  */
 fun NavHostController.navigateToTab(tab: TopLevelDestination) {
+    if (tab == TopLevelDestination.TODAY) {
+        val homeOnStack = runCatching { getBackStackEntry<HomeRoute>() }.isSuccess
+        if (homeOnStack) {
+            popBackStack<HomeRoute>(inclusive = false)
+        } else {
+            // e.g. opened from a deep link: build the normal stack with Today at the root.
+            navigate(HomeRoute) { popUpTo(graph.id) { inclusive = true } }
+        }
+        return
+    }
     navigate(tab.route) {
         popUpTo<HomeRoute> { saveState = true }
         launchSingleTop = true

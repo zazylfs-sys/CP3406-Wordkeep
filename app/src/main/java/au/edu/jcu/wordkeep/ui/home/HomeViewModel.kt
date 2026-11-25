@@ -10,7 +10,9 @@ import au.edu.jcu.wordkeep.domain.model.MasteryLevel
 import au.edu.jcu.wordkeep.domain.model.StudyWord
 import au.edu.jcu.wordkeep.domain.quiz.MeaningQuizBuilder
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -51,21 +53,29 @@ class HomeViewModel @Inject constructor(
     private val wordRepository: WordRepository,
     studyRepository: StudyRepository,
     private val settingsRepository: SettingsRepository,
-    clock: Clock,
+    private val clock: Clock,
 ) : ViewModel() {
 
-    private val today: LocalDate = LocalDate.now(clock)
+    /** "Today" is refreshed whenever the screen resumes, so the desk is right after midnight. */
+    private val today = MutableStateFlow(LocalDate.now(clock))
     private val download = MutableStateFlow<DownloadUi>(DownloadUi.Idle)
 
-    val uiState: StateFlow<HomeUiState> = combine(
-        wordRepository.observeLibrary(),
-        studyRepository.observeAnsweredToday(today),
-        settingsRepository.settings,
-        wordRepository.observePendingCount(),
-        download,
-    ) { words, answeredToday, settings, pending, downloadState ->
-        buildState(words, answeredToday, settings.dailyNewWords, settings.offlineMode, pending, downloadState)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val uiState: StateFlow<HomeUiState> = today.flatMapLatest { date ->
+        combine(
+            wordRepository.observeLibrary(),
+            studyRepository.observeAnsweredToday(date),
+            settingsRepository.settings,
+            wordRepository.observePendingCount(),
+            download,
+        ) { words, answeredToday, settings, pending, downloadState ->
+            buildState(date, words, answeredToday, settings.dailyNewWords, settings.offlineMode, pending, downloadState)
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+
+    fun refreshDate() {
+        today.value = LocalDate.now(clock)
+    }
 
     init {
         // Finish an interrupted starter-pack download when the app opens, unless offline mode is on.
@@ -90,6 +100,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun buildState(
+        today: LocalDate,
         words: List<StudyWord>,
         answeredToday: Int,
         dailyNewWords: Int,
