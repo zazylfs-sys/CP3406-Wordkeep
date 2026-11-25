@@ -1,9 +1,7 @@
 package au.edu.jcu.wordkeep.ui.session
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import au.edu.jcu.wordkeep.data.audio.FeedbackPlayer
 import au.edu.jcu.wordkeep.data.audio.PlaybackState
 import au.edu.jcu.wordkeep.data.audio.Pronouncer
@@ -20,8 +18,12 @@ import au.edu.jcu.wordkeep.domain.spelling.SpellingJudge
 import au.edu.jcu.wordkeep.domain.spelling.SpellingVerdict
 import au.edu.jcu.wordkeep.domain.study.SessionPlanner
 import au.edu.jcu.wordkeep.domain.study.Sm2Scheduler
-import au.edu.jcu.wordkeep.ui.navigation.SessionRoute
+import au.edu.jcu.wordkeep.di.ApplicationScope
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -35,7 +37,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
-import javax.inject.Inject
 import kotlin.random.Random
 
 /**
@@ -44,10 +45,13 @@ import kotlin.random.Random
  * Scheduling rule: flashcard grades always reschedule the word (that is what the review is for).
  * Quiz and spelling answers reschedule a word only when it is already due, so extra practice can
  * never push a word further away than the schedule intended. Every answer is logged for statistics.
+ *
+ * The mode comes from the navigation route through assisted injection, so the view model can be
+ * constructed directly in unit tests.
  */
-@HiltViewModel
-class SessionViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+@HiltViewModel(assistedFactory = SessionViewModel.Factory::class)
+class SessionViewModel @AssistedInject constructor(
+    @Assisted private val mode: StudyMode,
     private val studyRepository: StudyRepository,
     private val wordRepository: WordRepository,
     private val settingsRepository: SettingsRepository,
@@ -55,9 +59,14 @@ class SessionViewModel @Inject constructor(
     private val feedback: FeedbackPlayer,
     private val clock: Clock,
     private val random: Random,
+    @ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
-    private val mode: StudyMode = savedStateHandle.toRoute<SessionRoute>().mode
+    @AssistedFactory
+    interface Factory {
+        fun create(mode: StudyMode): SessionViewModel
+    }
+
     private val today: LocalDate = LocalDate.now(clock)
 
     private val _uiState = MutableStateFlow<SessionUiState>(SessionUiState.Loading(mode))
@@ -124,7 +133,8 @@ class SessionViewModel @Inject constructor(
     private fun flashcardFor(word: StudyWord, isRepeat: Boolean = false) = SessionItem.Flashcard(
         word = word,
         revealed = false,
-        intervals = Sm2Scheduler.preview(word.review, today),
+        // A repeat does not reschedule (see grade()), so it must not promise an interval.
+        intervals = if (isRepeat) emptyMap() else Sm2Scheduler.preview(word.review, today),
         isRepeat = isRepeat,
     )
 
@@ -135,8 +145,9 @@ class SessionViewModel @Inject constructor(
         _uiState.value = SessionUiState.Active(mode, position, queue.size, item)
         val prefs = settings.value
         val autoPlay = when (item) {
+            is SessionItem.Flashcard -> prefs.autoPlayPronunciation
             is SessionItem.Spelling -> true // the activity is listening, so the word always plays
-            else -> prefs.autoPlayPronunciation
+            is SessionItem.Meaning -> false // saying the word would give the answer away
         }
         if (autoPlay) pronounce()
     }
@@ -218,7 +229,7 @@ class SessionViewModel @Inject constructor(
                 attempts == 1 -> Grade.GOOD
                 else -> Grade.HARD
             }
-            record(item.word, grade, correct, reschedule = isDue(item.word))
+            record(item.word, grade, correct, reschedule = isDue(item.word), firstTry = correct && attempts == 1)
         }
     }
 
@@ -265,12 +276,23 @@ class SessionViewModel @Inject constructor(
 
     private fun isDue(word: StudyWord) = word.review.isDue(today)
 
-    private fun record(word: StudyWord, grade: Grade, correct: Boolean, reschedule: Boolean) {
+    /**
+     * Logs an answer. [firstTry] feeds the summary's "correct first time"; a spelling fixed on the
+     * second attempt is logged as correct but does not count as first-time correct.
+     */
+    private fun record(
+        word: StudyWord,
+        grade: Grade,
+        correct: Boolean,
+        reschedule: Boolean,
+        firstTry: Boolean = correct,
+    ) {
         val wordId = word.word.id
-        firstResults.putIfAbsent(wordId, correct)
+        firstResults.putIfAbsent(wordId, firstTry)
         val newState = if (reschedule) Sm2Scheduler.schedule(word.review, grade, today) else null
         val elapsed = clock.millis() - itemShownAt
-        viewModelScope.launch {
+        // Written in the app scope: leaving the session straight after the last answer must not cancel the save.
+        appScope.launch {
             studyRepository.recordAnswer(
                 AnswerRecord(
                     wordId = wordId,

@@ -10,7 +10,9 @@ import au.edu.jcu.wordkeep.data.settings.SettingsRepository
 import au.edu.jcu.wordkeep.data.settings.UserSettings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import au.edu.jcu.wordkeep.di.ApplicationScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -54,6 +56,7 @@ class YourDataViewModel @Inject constructor(
     statsRepository: StatsRepository,
     settingsRepository: SettingsRepository,
     clock: Clock,
+    @ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
 
     val uiState: StateFlow<YourDataUiState> =
@@ -78,9 +81,13 @@ class YourDataViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The erase runs in the app scope so that leaving the screen cannot stop it halfway
+     * (for example after Room is cleared but before the settings are).
+     */
     fun deleteEverything() {
         viewModelScope.launch {
-            privacyRepository.deleteEverything()
+            appScope.launch { privacyRepository.deleteEverything() }.join()
             _message.value = DataMessage.Deleted
         }
     }

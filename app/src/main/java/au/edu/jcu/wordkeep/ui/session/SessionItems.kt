@@ -187,7 +187,8 @@ fun FlashcardContent(item: SessionItem.Flashcard, playback: PlaybackState, actio
                 }
             } else {
                 Text(
-                    "How well did you know it?",
+                    if (item.isRepeat) "Practice only: this word’s next review is already scheduled."
+                    else "How well did you know it?",
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
@@ -249,7 +250,7 @@ private fun GradeButtons(intervals: Map<Grade, Int>, onGrade: (Grade) -> Unit) {
     val stacked = LocalDensity.current.fontScale > 1.3f
     val buttons: List<@Composable (Modifier) -> Unit> = Grade.entries.map { grade ->
         { modifier ->
-            GradeButton(grade, intervals[grade] ?: 0, modifier) {
+            GradeButton(grade, intervals[grade], modifier) {
                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onGrade(grade)
             }
@@ -265,17 +266,17 @@ private fun GradeButtons(intervals: Map<Grade, Int>, onGrade: (Grade) -> Unit) {
 }
 
 @Composable
-private fun GradeButton(grade: Grade, intervalDays: Int, modifier: Modifier, onClick: () -> Unit) {
-    val interval = if (intervalDays == 1) "1 day" else "$intervalDays days"
+private fun GradeButton(grade: Grade, intervalDays: Int?, modifier: Modifier, onClick: () -> Unit) {
+    val interval = intervalDays?.let { if (it == 1) "1 day" else "$it days" }
     val content: @Composable () -> Unit = {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(grade.label, style = MaterialTheme.typography.labelLarge)
-            Text(interval, style = MaterialTheme.typography.labelSmall)
+            interval?.let { Text(it, style = MaterialTheme.typography.labelSmall) }
         }
     }
     val described = modifier
         .heightIn(min = 56.dp)
-        .semantics { contentDescription = "${grade.label}. Next review in $interval" }
+        .semantics { contentDescription = interval?.let { "${grade.label}. Next review in $it" } ?: grade.label }
     when (grade) {
         Grade.AGAIN -> OutlinedButton(
             onClick = onClick,
@@ -545,16 +546,29 @@ private fun SpellingFeedback(item: SessionItem.Spelling, playback: PlaybackState
 
 @Composable
 private fun WrongSpelling(answer: String, diff: List<LetterMark>, playback: PlaybackState, actions: SessionActions) {
-    val wrongLetters = diff.count { it.status != LetterMark.Status.MATCHED }
     Feedback(
         correct = false,
         headline = "The spelling is “$answer”.",
-        detail = if (wrongLetters > 0) "Underlined letters were missing or different (${wrongLetters} in total)." else null,
+        detail = describeDiff(diff),
         word = answer,
         playback = playback,
         onPronounce = actions.onPronounce,
         extra = { DiffText(diff) },
     )
+}
+
+/**
+ * A text version of the underlined letters, e.g. "Check letter 4 (l) and letter 8 (n).", so the
+ * same information reaches screen-reader users and anyone who cannot see the underline colour.
+ */
+internal fun describeDiff(diff: List<LetterMark>): String? {
+    val positions = diff.mapIndexedNotNull { index, mark ->
+        if (mark.status == LetterMark.Status.MATCHED) null else "letter ${index + 1} (${mark.letter})"
+    }
+    if (positions.isEmpty()) return null
+    val list = if (positions.size == 1) positions.single()
+    else positions.dropLast(1).joinToString(", ") + " and " + positions.last()
+    return "Check $list."
 }
 
 /** The correct word with missed or changed letters underlined and bold (visual aid; the text above says the same). */

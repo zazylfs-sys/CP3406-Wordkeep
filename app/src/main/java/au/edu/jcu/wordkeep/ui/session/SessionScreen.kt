@@ -65,10 +65,13 @@ data class SessionActions(
 
 @Composable
 fun SessionRoute(
+    mode: StudyMode,
     onFinished: (StudyMode, SessionSummary) -> Unit,
     onExit: () -> Unit,
     onOpenLibrary: () -> Unit,
-    viewModel: SessionViewModel = hiltViewModel(),
+    viewModel: SessionViewModel = hiltViewModel<SessionViewModel, SessionViewModel.Factory>(
+        creationCallback = { factory -> factory.create(mode) },
+    ),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val playback by viewModel.playback.collectAsStateWithLifecycle()
