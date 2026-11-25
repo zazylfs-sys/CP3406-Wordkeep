@@ -72,6 +72,9 @@ interface WordDao {
         insertSenses(senses.map { it.copy(wordId = word.id) })
     }
 
+    @Query("UPDATE words SET note = :note WHERE id = :id")
+    suspend fun updateNote(id: Long, note: String?)
+
     @Query("DELETE FROM words WHERE id = :id")
     suspend fun delete(id: Long)
 }

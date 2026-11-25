@@ -26,6 +26,8 @@ data class WordEntity(
     @ColumnInfo(name = "fetch_state") val fetchState: FetchState,
     @ColumnInfo(name = "added_at") val addedAt: Instant,
     @ColumnInfo(name = "fetched_at") val fetchedAt: Instant?,
+    /** The learner's own memory hook for this word. Added in schema version 2. */
+    @ColumnInfo(name = "note") val note: String? = null,
 )
 
 /** One numbered definition of a word. Deleted with its word. */
@@ -110,6 +112,27 @@ data class ReviewLogEntity(
     @ColumnInfo(name = "answered_at") val answeredAt: Instant,
     @ColumnInfo(name = "answered_day") val answeredDay: LocalDate,
     @ColumnInfo(name = "response_millis") val responseMillis: Long,
+)
+
+/**
+ * Look-alike words from the Datamuse API, cached so meaning quizzes still have hard
+ * distractors when the device is offline. Added in schema version 2.
+ */
+@Entity(
+    tableName = "look_alikes",
+    primaryKeys = ["word_id", "text"],
+    foreignKeys = [
+        ForeignKey(
+            entity = WordEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["word_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class LookAlikeEntity(
+    @ColumnInfo(name = "word_id") val wordId: Long,
+    val text: String,
 )
 
 /** A word with its senses and (optional) card, loaded in one transaction. */
