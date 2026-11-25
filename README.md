@@ -162,6 +162,8 @@ MainActivity ── WordkeepApp (NavigationSuiteScaffold: bar on phones, rail �
 | `AccessibilityChecksTest` | Instrumented (Compose + ATF) | Google Accessibility Test Framework on every main screen in light and dark themes |
 | `AppNavigationTest` | Instrumented (Hilt end-to-end) | Real NavHost + ViewModels + in-memory Room with faked APIs: look up → save → study → summary → Today, tab back stacks, Today does not restore a left screen, not-found state |
 
+**Latest run (25 Nov 2026, Pixel-size emulator, API 36):** 75 JVM tests and 37 instrumented tests pass. Android Lint reports 0 errors, and the release build assembles.
+
 ```bash
 ./gradlew testDebugUnitTest              # JVM tests
 ./gradlew connectedDebugAndroidTest      # instrumented tests (emulator or device)
