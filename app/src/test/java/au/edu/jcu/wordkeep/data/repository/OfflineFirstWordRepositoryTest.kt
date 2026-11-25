@@ -195,6 +195,20 @@ class OfflineFirstWordRepositoryTest {
     }
 
     @Test
+    fun `a rate-limited look-up waits for Retry-After and then succeeds`() = runTest {
+        val repository = repository()
+        server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "2"))
+        server.enqueue(fixtureResponse("concept"))
+
+        val result = repository.lookUp("concept")
+
+        assertTrue(result is LookupResult.Found)
+        assertEquals(2, server.requestCount)
+        // The retry happened after the server's requested wait, in virtual test time.
+        assertTrue(testScheduler.currentTime >= 2_000)
+    }
+
+    @Test
     fun `a download never overwrites the learner's note`() = runTest {
         val repository = repository()
         val id = addPending("concept")
@@ -226,14 +240,19 @@ class OfflineFirstWordRepositoryTest {
         val repository = repository()
         val word = testWord(1, "analyse")
         server.enqueue(fixtureResponse("datamuse_sample"))
-        server.enqueue(MockResponse().setBody("""[{"word":"analyses"},{"word":"analyzed"},{"word":"anaphase"},{"word":"examine"}]"""))
+        server.enqueue(
+            MockResponse().setBody(
+                """[{"word":"analyses","tags":["f:3.1"]},{"word":"anaphase","tags":["f:0.2"]},{"word":"annals","tags":["f:2.5"]}]"""
+            )
+        )
 
         val first = repository.lookAlikes(word)
 
-        assertEquals(listOf("study", "examine", "psychoanalyse", "psychoanalyze", "dissect", "anaphase"), first)
+        // Inflections ("analyze", "psychoanalyse"), multi-word entries and rare words (< 1 per million) are dropped.
+        assertEquals(listOf("study", "examine", "annals"), first)
         assertEquals(first, lookAlikeDao.forWord(word.id))
-        assertEquals("/words?sp=analyse&max=20", nextRequestPath())
-        assertEquals("/words?sl=analyse&max=20", nextRequestPath())
+        assertEquals("/words?sp=analyse&max=20&md=f", nextRequestPath())
+        assertEquals("/words?sl=analyse&max=20&md=f", nextRequestPath())
         assertEquals(first, repository.lookAlikes(word))
         assertEquals(2, server.requestCount)
     }
@@ -244,7 +263,7 @@ class OfflineFirstWordRepositoryTest {
         server.enqueue(MockResponse().setResponseCode(503))
 
         assertTrue(repository.lookAlikes(testWord(1, "analyse")).isEmpty())
-        assertEquals("/words?sp=analyse&max=20", nextRequestPath())
+        assertEquals("/words?sp=analyse&max=20&md=f", nextRequestPath())
         assertEquals(1, server.requestCount)
     }
 

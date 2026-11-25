@@ -86,4 +86,11 @@ class MeaningQuizBuilderTest {
             DefinitionMasker.mask("To examine the evidence carefully.", "analyse"),
         )
     }
+
+    @Test
+    fun `derived forms and near-misspellings of the answer are never distractors`() {
+        val kept = DistractorFilter.filter("authority", listOf("reauthorize", "autority", "authorities", "minority", "priority"))
+        assertEquals(listOf("minority", "priority"), kept)
+        assertEquals(emptyList<String>(), DistractorFilter.filter("approach", listOf("reapproach", "approached")))
+    }
 }

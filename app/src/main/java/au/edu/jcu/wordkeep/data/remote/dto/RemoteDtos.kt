@@ -40,4 +40,10 @@ data class DefinitionDto(
 data class DatamuseWordDto(
     val word: String,
     val score: Long = 0,
-)
+    /** With `md=f`, includes "f:<occurrences per million words>". */
+    val tags: List<String> = emptyList(),
+) {
+    /** Word frequency per million words, or null if the API did not send it. */
+    val frequencyPerMillion: Double?
+        get() = tags.firstOrNull { it.startsWith("f:") }?.removePrefix("f:")?.toDoubleOrNull()
+}

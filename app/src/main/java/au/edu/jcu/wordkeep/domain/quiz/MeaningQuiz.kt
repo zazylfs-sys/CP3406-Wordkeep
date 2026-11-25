@@ -2,6 +2,7 @@ package au.edu.jcu.wordkeep.domain.quiz
 
 import au.edu.jcu.wordkeep.domain.model.Sense
 import au.edu.jcu.wordkeep.domain.model.Word
+import au.edu.jcu.wordkeep.domain.spelling.SpellingJudge
 import kotlin.random.Random
 
 /** One "which word matches this definition?" question. */
@@ -83,7 +84,10 @@ object DefinitionMasker {
     }
 }
 
-/** Rules that keep distractors fair: real single words, not the answer or a form of it. */
+/**
+ * Rules that keep distractors fair: real single words, never the answer, a form of it
+ * ("analysed", "reapproach") or a near-misspelling of it (one letter away).
+ */
 object DistractorFilter {
 
     private val singleWord = Regex("^[a-z]+(-[a-z]+)?$")
@@ -94,7 +98,8 @@ object DistractorFilter {
         return candidates
             .map { it.lowercase().trim() }
             .filter { it.matches(singleWord) }
-            .filter { it != answer && !it.startsWith(stem) }
+            .filter { it != answer && !it.contains(stem) }
+            .filter { SpellingJudge.levenshtein(it, answer) > 1 }
             .filter { it.length >= 3 }
             .distinct()
     }

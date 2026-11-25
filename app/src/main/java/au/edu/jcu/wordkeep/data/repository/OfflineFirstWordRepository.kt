@@ -1,5 +1,6 @@
 package au.edu.jcu.wordkeep.data.repository
 
+import android.util.Log
 import au.edu.jcu.wordkeep.data.local.dao.CardDao
 import au.edu.jcu.wordkeep.data.local.dao.LookAlikeDao
 import au.edu.jcu.wordkeep.data.local.dao.WordDao
@@ -26,6 +27,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -152,10 +154,13 @@ class OfflineFirstWordRepository @Inject constructor(
         val cached = lookAlikeDao.forWord(word.id)
         if (cached.isNotEmpty() || isOfflineMode()) return@withContext cached
         try {
-            val spelled = datamuseApi.spelledLike(word.text).map { it.word }
+            val spelled = datamuseApi.spelledLike(word.text)
             // Check again: offline mode may have been switched on between the two requests.
-            val sounds = if (isOfflineMode()) emptyList() else datamuseApi.soundsLike(word.text).map { it.word }
-            val candidates = spelled + sounds
+            val sounds = if (isOfflineMode()) emptyList() else datamuseApi.soundsLike(word.text)
+            // Only reasonably common words: rare or misspelled forms ("autority") make unfair options.
+            val candidates = (spelled + sounds)
+                .filter { (it.frequencyPerMillion ?: 0.0) >= MIN_DISTRACTOR_FREQUENCY }
+                .map { it.word }
             val usable = DistractorFilter.filter(word.text, candidates).take(MAX_LOOK_ALIKES)
             lookAlikeDao.insertAll(usable.map { LookAlikeEntity(word.id, it) })
             usable
@@ -178,20 +183,50 @@ class OfflineFirstWordRepository @Inject constructor(
         )
     }
 
+    /**
+     * One look-up. When the service is busy it is retried: HTTP 429 waits for the server's
+     * Retry-After time (the API allows short bursts of about 20 requests), and 5xx errors back off.
+     */
     private suspend fun fetch(text: String): Fetched {
+        var attempt = 0
+        while (true) {
+            val result = fetchOnce(text)
+            if (result !is Fetched.Failed || result.reason != LookupResult.Reason.SERVER_ERROR) return result
+            if (++attempt > MAX_RETRIES) return result
+            delay(result.retryAfterMs ?: (RETRY_DELAY_MS * attempt))
+        }
+    }
+
+    private suspend fun fetchOnce(text: String): Fetched {
         if (isOfflineMode()) return Fetched.Failed(LookupResult.Reason.OFFLINE_MODE)
         return try {
             DictionaryMapper.toEntry(text, dictionaryApi.lookUp(text))
                 ?.let { Fetched.Entry(it) }
                 ?: Fetched.Missing
         } catch (e: HttpException) {
-            if (e.code() == 404) Fetched.Missing else Fetched.Failed(LookupResult.Reason.SERVER_ERROR)
+            when (e.code()) {
+                404 -> Fetched.Missing
+                429 -> {
+                    val waitSeconds = e.response()?.headers()?.get("Retry-After")?.toLongOrNull()
+                    Log.i(TAG, "Dictionary rate limit reached; waiting ${waitSeconds ?: "a moment"} s")
+                    Fetched.Failed(
+                        LookupResult.Reason.SERVER_ERROR,
+                        retryAfterMs = (waitSeconds ?: DEFAULT_RETRY_AFTER_S).coerceIn(1, MAX_RETRY_AFTER_S) * 1_000,
+                    )
+                }
+                else -> {
+                    Log.w(TAG, "Dictionary returned HTTP ${e.code()}")
+                    Fetched.Failed(LookupResult.Reason.SERVER_ERROR)
+                }
+            }
         } catch (e: IOException) {
+            Log.w(TAG, "Dictionary request failed: ${e.javaClass.simpleName}")
             Fetched.Failed(LookupResult.Reason.NO_CONNECTION)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             // Malformed JSON and similar: treat as a server problem rather than crashing.
+            Log.w(TAG, "Could not read dictionary response", e)
             Fetched.Failed(LookupResult.Reason.SERVER_ERROR)
         }
     }
@@ -201,12 +236,18 @@ class OfflineFirstWordRepository @Inject constructor(
     private sealed interface Fetched {
         data class Entry(val entry: DictionaryEntry) : Fetched
         data object Missing : Fetched
-        data class Failed(val reason: LookupResult.Reason) : Fetched
+        data class Failed(val reason: LookupResult.Reason, val retryAfterMs: Long? = null) : Fetched
     }
 
     companion object {
         private const val MAX_LOOK_ALIKES = 8
         private const val PARALLEL_DOWNLOADS = 4
+        private const val MIN_DISTRACTOR_FREQUENCY = 1.0
+        private const val MAX_RETRIES = 3
+        private const val DEFAULT_RETRY_AFTER_S = 10L
+        private const val MAX_RETRY_AFTER_S = 30L
+        private const val RETRY_DELAY_MS = 1_500L
+        private const val TAG = "WordRepository"
         private val allowed = Regex("^[a-z][a-z' -]{0,44}$")
 
         /** Lower-cases and trims a query; returns null for input that cannot be a word. */

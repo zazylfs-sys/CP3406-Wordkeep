@@ -99,6 +99,15 @@ class Sm2SchedulerTest {
     }
 
     @Test
+    fun `easy on a first review skips ahead four days`() {
+        val easy = Sm2Scheduler.schedule(ReviewState(), Grade.EASY, today)
+
+        assertEquals(Sm2Scheduler.EASY_FIRST_INTERVAL, easy.intervalDays)
+        assertEquals(1, easy.repetitions)
+        assertEquals(1, Sm2Scheduler.schedule(ReviewState(), Grade.GOOD, today).intervalDays)
+    }
+
+    @Test
     fun `whole-number intervals are not pushed up by floating point error`() {
         val state = ReviewState(repetitions = 2, intervalDays = 6, easeFactor = 2.5, dueDate = today)
 

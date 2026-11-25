@@ -23,6 +23,7 @@ interface DatamuseApi {
     suspend fun spelledLike(
         @Query("sp") pattern: String,
         @Query("max") max: Int = 20,
+        @Query("md") metadata: String = "f",
     ): List<DatamuseWordDto>
 
     /** Words that sound like [word]. */
@@ -30,6 +31,7 @@ interface DatamuseApi {
     suspend fun soundsLike(
         @Query("sl") word: String,
         @Query("max") max: Int = 20,
+        @Query("md") metadata: String = "f",
     ): List<DatamuseWordDto>
 
     companion object {
