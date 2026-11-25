@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- card behind (tilted stack) -->
+    <path android:fillColor="#D6EAD9"
+        android:pathData="M37,33 L73,29 Q76,28.7 76.3,31.7 L79.6,69 Q79.9,72 76.9,72.3 L40.9,76.3 Q37.9,76.6 37.6,73.6 L34.3,36.3 Q34,33.3 37,33 Z" />
+    <!-- front index card -->
+    <path android:fillColor="#FAF7F2"
+        android:pathData="M33,37 h38 q3,0 3,3 v35 q0,3 -3,3 h-38 q-3,0 -3,-3 v-35 q0,-3 3,-3 Z" />
+    <!-- headword bar and ruled lines -->
+    <path android:fillColor="#1A1917" android:pathData="M37,46 h20 q1.5,0 1.5,1.5 v0 q0,1.5 -1.5,1.5 h-20 q-1.5,0 -1.5,-1.5 v0 q0,-1.5 1.5,-1.5 Z" />
+    <path android:fillColor="#00000000" android:strokeColor="#756F67" android:strokeWidth="1.6"
+        android:strokeLineCap="round" android:pathData="M37,57 h30 M37,63 h30 M37,69 h20" />
+    <!-- claret bookmark ribbon -->
+    <path android:fillColor="#663354" android:pathData="M62,37 h7 v16 l-3.5,-3 l-3.5,3 Z" />
+</vector>
