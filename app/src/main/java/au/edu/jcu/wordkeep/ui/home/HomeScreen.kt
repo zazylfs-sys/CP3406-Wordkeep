@@ -2,6 +2,7 @@ package au.edu.jcu.wordkeep.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -177,7 +178,8 @@ private fun TodayDesk(state: HomeUiState, onStartSession: (StudyMode) -> Unit, o
     PaperCard(Modifier.fillMaxWidth()) {
         SectionLabel("Today’s desk")
         Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+        // FlowRow: with very large text the figures wrap as whole units instead of squeezing.
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             StatFigure(state.dueCount.toString(), "due for review")
             StatFigure(state.newAvailable.toString(), "new words")
             StatFigure(state.answeredToday.toString(), "answered today")

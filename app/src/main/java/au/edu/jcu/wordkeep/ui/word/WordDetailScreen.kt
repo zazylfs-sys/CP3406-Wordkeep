@@ -54,6 +54,7 @@ import au.edu.jcu.wordkeep.ui.components.PronounceButton
 import au.edu.jcu.wordkeep.ui.components.SectionLabel
 import au.edu.jcu.wordkeep.ui.components.SenseList
 import au.edu.jcu.wordkeep.ui.friendly
+import au.edu.jcu.wordkeep.ui.plural
 import java.time.LocalDate
 
 @Composable
@@ -189,7 +190,7 @@ private fun WordDetailContent(
             }
             Spacer(Modifier.heightIn(min = 8.dp))
             ProgressLine("Next review", review.dueDate?.let { if (it.isBefore(today)) "overdue" else it.friendly(today) } ?: "not studied yet")
-            ProgressLine("Current interval", if (review.isNew) "—" else "${review.intervalDays} days")
+            ProgressLine("Current interval", if (review.isNew) "—" else plural(review.intervalDays, "day"))
             ProgressLine("Times forgotten", review.lapses.toString())
             ProgressLine("Ease", "%.2f".format(review.easeFactor))
             if (!review.isNew) {

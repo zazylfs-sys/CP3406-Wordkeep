@@ -3,11 +3,13 @@ package au.edu.jcu.wordkeep.ui.summary
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -107,6 +109,7 @@ fun SummaryScreen(
     Column(
         Modifier
             .fillMaxSize()
+            .safeDrawingPadding()
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
             .widthIn(max = 720.dp),
@@ -126,7 +129,8 @@ fun SummaryScreen(
             )
         }
         PaperCard(Modifier.fillMaxWidth()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+            // FlowRow: with very large text the figures wrap as whole units instead of squeezing.
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatFigure(state.answered.toString(), "answered")
                 StatFigure(state.accuracy?.let { "$it%" } ?: "—", "correct first time")
                 StatFigure(formatDuration(state.seconds), "time")

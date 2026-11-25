@@ -180,7 +180,12 @@ private fun ChartCard(
     PaperCard(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SectionLabel(title, Modifier.weight(1f))
-            TextButton(onClick = { showTable = !showTable }) { Text(if (showTable) "Show chart" else "Show numbers") }
+            val action = if (showTable) "Show chart" else "Show numbers"
+            // Each card's button names its chart, so TalkBack users can tell them apart.
+            TextButton(
+                onClick = { showTable = !showTable },
+                modifier = Modifier.semantics { contentDescription = "$action: $title" },
+            ) { Text(action) }
         }
         Spacer(Modifier.height(8.dp))
         if (showTable) table() else chart()
