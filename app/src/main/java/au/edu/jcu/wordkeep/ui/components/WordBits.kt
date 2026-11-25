@@ -29,7 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -123,8 +122,8 @@ fun PartOfSpeech(text: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * The IPA string is shown but not read aloud character by character (TalkBack spells out
- * symbols such as "ə"); the pronunciation button next to it is the accessible alternative.
+ * The IPA string, labelled so screen-reader users know what the symbols are. The pronunciation
+ * button next to it is the easier alternative for hearing the word.
  */
 @Composable
 fun PhoneticText(phonetic: String?, modifier: Modifier = Modifier) {
@@ -133,7 +132,7 @@ fun PhoneticText(phonetic: String?, modifier: Modifier = Modifier) {
         text = phonetic,
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.clearAndSetSemantics { contentDescription = "Phonetic spelling" },
+        modifier = modifier.semantics { contentDescription = "Phonetic spelling: $phonetic" },
     )
 }
 
