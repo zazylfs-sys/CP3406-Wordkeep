@@ -117,8 +117,8 @@ private fun Overview(stats: LearningStats) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             StatFigure(stats.mastery.total.toString(), "words saved")
             StatFigure(stats.overallAccuracy?.let { "$it%" } ?: "—", "answers correct")
-            StatFigure(stats.activeDaysLast30.toString(), "days studied (30)")
-            StatFigure(stats.studyMinutes.toString(), "minutes")
+            StatFigure(stats.activeDaysLast30.toString(), "days studied, last 30")
+            StatFigure(stats.studyMinutes.toString(), "minutes in total")
         }
         Spacer(Modifier.height(8.dp))
         Text(
@@ -212,7 +212,7 @@ private fun ActivityCard(stats: LearningStats, today: LocalDate) {
             )
             Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 LegendItem(WordkeepTheme.colors.correct, "Correct")
-                LegendItem(WordkeepTheme.colors.chartTrack, "Answered")
+                LegendItem(WordkeepTheme.colors.chartTrack, "Not correct")
             }
         },
     )

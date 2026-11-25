@@ -278,16 +278,10 @@ private fun GradeButton(grade: Grade, intervalDays: Int?, modifier: Modifier, on
     val described = modifier
         .heightIn(min = 56.dp)
         .semantics { contentDescription = interval?.let { "${grade.label}. Next review in $it" } ?: grade.label }
-    when (grade) {
-        Grade.AGAIN -> OutlinedButton(
-            onClick = onClick,
-            modifier = described,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            contentPadding = ButtonDefaults.TextButtonContentPadding,
-        ) { content() }
-        Grade.GOOD -> Button(onClick = onClick, modifier = described, contentPadding = ButtonDefaults.TextButtonContentPadding) { content() }
-        else -> FilledTonalButton(onClick = onClick, modifier = described, contentPadding = ButtonDefaults.TextButtonContentPadding) { content() }
+    // All four grades look the same on purpose: highlighting "Good" would nudge learners away
+    // from rating honestly, and honest ratings are what make the schedule work.
+    FilledTonalButton(onClick = onClick, modifier = described, contentPadding = ButtonDefaults.TextButtonContentPadding) {
+        content()
     }
 }
 
@@ -325,7 +319,8 @@ fun MeaningContent(item: SessionItem.Meaning, playback: PlaybackState, actions: 
                 Feedback(
                     correct = item.isCorrect,
                     headline = if (item.isCorrect) "Correct: ${question.answer}" else "Not quite. The answer is “${question.answer}”.",
-                    detail = question.sense.definition,
+                    // The definition is already on screen; an example shows the word in use instead.
+                    detail = question.sense.example?.let { "Example: “$it”" },
                     word = question.answer,
                     playback = playback,
                     onPronounce = actions.onPronounce,
@@ -486,7 +481,8 @@ fun SpellingContent(
             OutlinedTextField(
                 value = item.attempt,
                 onValueChange = actions.onAttemptChange,
-                enabled = !item.finished,
+                // Read-only rather than disabled once finished, so the attempt keeps full contrast.
+                readOnly = item.finished,
                 singleLine = true,
                 label = { Text("Your spelling") },
                 textStyle = MaterialTheme.typography.headlineSmall,

@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import au.edu.jcu.wordkeep.ui.components.ConfirmDialog
 import au.edu.jcu.wordkeep.ui.components.PaperCard
 import au.edu.jcu.wordkeep.ui.components.SectionLabel
+import au.edu.jcu.wordkeep.ui.components.SwitchRow
 import au.edu.jcu.wordkeep.ui.plural
 import java.time.LocalDate
 
@@ -77,6 +78,7 @@ fun YourDataRoute(
         onBack = onBack,
         onExport = { exportLauncher.launch("wordkeep-${LocalDate.now()}.csv") },
         onDeleteEverything = viewModel::deleteEverything,
+        onOfflineModeChange = viewModel::setOfflineMode,
     )
 }
 
@@ -89,6 +91,7 @@ fun YourDataScreen(
     onBack: () -> Unit,
     onExport: () -> Unit,
     onDeleteEverything: () -> Unit,
+    onOfflineModeChange: (Boolean) -> Unit = {},
 ) {
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     Scaffold(
@@ -120,9 +123,16 @@ fun YourDataScreen(
             Fact(
                 icon = Icons.Rounded.CloudUpload,
                 title = if (state.offlineMode) "Sent over the internet: nothing (offline mode is on)" else "Sent over the internet",
-                body = "When you look up a word, only that word is sent to dictionaryapi.dev. " +
+                body = "When you look up a word (or download the starter list), only the word is sent to dictionaryapi.dev. " +
                     "For quiz options, the word being studied is sent to api.datamuse.com. " +
-                    "Pronunciation recordings are streamed from dictionaryapi.dev. No account, device ID or location is attached.",
+                    "Pronunciation recordings are streamed from dictionaryapi.dev. No account, device ID or location is attached; " +
+                    "like any website, these services can see your network’s IP address.",
+            )
+            SwitchRow(
+                title = "Offline mode",
+                description = "Stop all network use. Saved words and reviews keep working.",
+                checked = state.offlineMode,
+                onCheckedChange = onOfflineModeChange,
             )
             Fact(
                 icon = Icons.Rounded.Block,

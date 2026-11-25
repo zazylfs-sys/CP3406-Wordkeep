@@ -54,7 +54,7 @@ class YourDataViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val privacyRepository: PrivacyRepository,
     statsRepository: StatsRepository,
-    settingsRepository: SettingsRepository,
+    private val settingsRepository: SettingsRepository,
     clock: Clock,
     @ApplicationScope private val appScope: CoroutineScope,
 ) : ViewModel() {
@@ -90,6 +90,10 @@ class YourDataViewModel @Inject constructor(
             appScope.launch { privacyRepository.deleteEverything() }.join()
             _message.value = DataMessage.Deleted
         }
+    }
+
+    fun setOfflineMode(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.update { it.copy(offlineMode = enabled) } }
     }
 
     fun messageShown() {

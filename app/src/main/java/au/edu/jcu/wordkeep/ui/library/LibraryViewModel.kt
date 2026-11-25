@@ -25,7 +25,7 @@ enum class LibraryFilter(val label: String) {
     NEW("New"),
     LEARNING("Learning"),
     MASTERED("Mastered"),
-    STARTER("Starter list"),
+    STARTER("Starter"),
 }
 
 data class LibraryUiState(

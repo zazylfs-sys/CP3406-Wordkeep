@@ -222,7 +222,7 @@ private fun NoteEditor(initial: String, onSave: (String) -> Unit) {
             value = draft,
             onValueChange = { draft = it.take(200) },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("A sentence or image that helps you remember") },
+            label = { Text("A sentence or mental picture that helps you remember") },
             supportingText = { Text("Shown on the back of the flashcard. Stays on this device.") },
             minLines = 2,
         )

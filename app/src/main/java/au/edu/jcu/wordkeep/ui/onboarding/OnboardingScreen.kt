@@ -98,8 +98,9 @@ fun OnboardingScreen(onStart: (addStarterPack: Boolean, offlineMode: Boolean) ->
         Promise(Icons.Rounded.PhoneAndroid, "Your progress stays on this phone", "No account, no cloud backup, no analytics, no location.")
         Promise(
             Icons.Rounded.CloudQueue,
-            "Only the word you look up is sent",
-            "Definitions come from dictionaryapi.dev and quiz options from api.datamuse.com. You can switch all network use off.",
+            "Only the words you study are sent",
+            "Definitions and recordings come from dictionaryapi.dev, quiz options from api.datamuse.com. " +
+                "Like any website, they can see your network’s IP address. You can switch all network use off.",
         )
         Promise(
             Icons.Rounded.Accessibility,
