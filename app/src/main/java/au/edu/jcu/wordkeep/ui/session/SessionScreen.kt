@@ -7,17 +7,17 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.EventAvailable
-import androidx.compose.material.icons.rounded.LibraryAdd
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -36,6 +36,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -46,7 +47,12 @@ import au.edu.jcu.wordkeep.data.settings.UserSettings
 import au.edu.jcu.wordkeep.domain.model.Grade
 import au.edu.jcu.wordkeep.domain.model.StudyMode
 import au.edu.jcu.wordkeep.ui.components.ConfirmDialog
+import au.edu.jcu.wordkeep.ui.components.BrandIllustration
 import au.edu.jcu.wordkeep.ui.components.EmptyState
+import au.edu.jcu.wordkeep.ui.components.Illustration
+import au.edu.jcu.wordkeep.ui.components.illustration
+import au.edu.jcu.wordkeep.ui.components.isLargeText
+import au.edu.jcu.wordkeep.ui.components.plateColor
 import au.edu.jcu.wordkeep.ui.friendly
 import au.edu.jcu.wordkeep.ui.theme.WordkeepTheme
 
@@ -121,26 +127,50 @@ fun SessionScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(state.mode.title, style = MaterialTheme.typography.titleMedium)
-                        if (active != null) {
-                            Text(
-                                "${active.position + 1} of ${active.total}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // A header band in the activity's plate colour, with its illustration at the end: the
+            // same pairing as the activity's tile on Today. The question area below stays plain.
+            Column(Modifier.background(state.mode.plateColor())) {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(state.mode.title, style = MaterialTheme.typography.titleMedium)
+                            if (active != null) {
+                                Text(
+                                    "${active.position + 1} of ${active.total}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { if (active != null) confirmExit = true else onExit() }) {
+                            Icon(Icons.Rounded.Close, contentDescription = "End session")
+                        }
+                    },
+                    actions = {
+                        if (!isLargeText()) {
+                            BrandIllustration(
+                                state.mode.illustration,
+                                Modifier
+                                    .padding(end = 12.dp)
+                                    .size(56.dp),
                             )
                         }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { if (active != null) confirmExit = true else onExit() }) {
-                        Icon(Icons.Rounded.Close, contentDescription = "End session")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-            )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                )
+                if (active != null) {
+                    LinearProgressIndicator(
+                        progress = { active.progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 20.dp, end = 20.dp, bottom = 14.dp)
+                            .semantics { contentDescription = "Question ${active.position + 1} of ${active.total}" },
+                        trackColor = MaterialTheme.colorScheme.surface,
+                    )
+                }
+            }
         },
     ) { padding ->
         Column(
@@ -148,16 +178,6 @@ fun SessionScreen(
                 .padding(padding)
                 .fillMaxSize(),
         ) {
-            if (active != null) {
-                LinearProgressIndicator(
-                    progress = { active.progress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .semantics { contentDescription = "Question ${active.position + 1} of ${active.total}" },
-                    trackColor = WordkeepTheme.colors.chartTrack,
-                )
-            }
             Box(
                 Modifier
                     .weight(1f)
@@ -226,7 +246,7 @@ private fun EmptySession(state: SessionUiState.Empty, onExit: () -> Unit, onOpen
     Column(Modifier.padding(top = 32.dp), verticalArrangement = Arrangement.Center) {
         when (state.reason) {
             EmptyReason.NOTHING_DUE -> EmptyState(
-                icon = Icons.Rounded.EventAvailable,
+                art = Illustration.DayComplete,
                 title = "Nothing due right now",
                 body = state.nextReview?.let { "Your next review is ${it.friendly(state.today)}. Spacing reviews out is what makes words stick." }
                     ?: "You have reached today’s limit for new words.",
@@ -234,14 +254,14 @@ private fun EmptySession(state: SessionUiState.Empty, onExit: () -> Unit, onOpen
                 onAction = onExit,
             )
             EmptyReason.NOT_ENOUGH_WORDS -> EmptyState(
-                icon = Icons.Rounded.LibraryAdd,
+                art = Illustration.EmptyLibrary,
                 title = "A few more words needed",
                 body = "This activity needs at least three words with definitions to build fair questions.",
                 actionLabel = "Add words",
                 onAction = onOpenLibrary,
             )
             EmptyReason.NO_WORDS -> EmptyState(
-                icon = Icons.Rounded.LibraryAdd,
+                art = Illustration.EmptyLibrary,
                 title = "No words yet",
                 body = "Look up a word or add the starter list to begin.",
                 actionLabel = "Add words",

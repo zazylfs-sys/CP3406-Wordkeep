@@ -1,9 +1,6 @@
 package au.edu.jcu.wordkeep.ui.home
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -15,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -46,7 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -63,6 +58,11 @@ import au.edu.jcu.wordkeep.domain.model.StudyMode
 import au.edu.jcu.wordkeep.ui.components.BrandIllustration
 import au.edu.jcu.wordkeep.ui.components.Hairline
 import au.edu.jcu.wordkeep.ui.components.Illustration
+import au.edu.jcu.wordkeep.ui.components.IllustratedPlate
+import au.edu.jcu.wordkeep.ui.components.illustration
+import au.edu.jcu.wordkeep.ui.components.isLargeText
+import au.edu.jcu.wordkeep.ui.components.plateBorder
+import au.edu.jcu.wordkeep.ui.components.plateColor
 import au.edu.jcu.wordkeep.ui.components.NoticeBanner
 import au.edu.jcu.wordkeep.ui.components.SectionLabel
 import au.edu.jcu.wordkeep.ui.components.StatFigure
@@ -216,37 +216,13 @@ private fun TodayHero(state: HomeUiState, onStartSession: (StudyMode) -> Unit, o
         state.readyWords == 0 -> Illustration.EmptyLibrary
         else -> Illustration.DayComplete
     }
-    val largeText = LocalDensity.current.fontScale >= LARGE_TEXT_SCALE
-    Surface(
-        color = WordkeepTheme.colors.plateHero,
-        shape = RoundedCornerShape(24.dp),
-        border = plateBorder(),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(20.dp)) {
-            Row {
-                Column(Modifier.weight(1f)) {
-                    SectionLabel("Today’s desk")
-                    AccentRule(Modifier.padding(top = 8.dp, bottom = 12.dp))
-                    HeroHeadline(state)
-                }
-                if (!largeText) {
-                    BrandIllustration(
-                        art,
-                        Modifier
-                            .padding(start = 8.dp)
-                            .size(148.dp)
-                            .offset(x = 12.dp, y = (-8).dp),
-                    )
-                }
-            }
-            if (!state.loading && state.readyWords > 0) {
-                Spacer(Modifier.height(16.dp))
-                TodayFigures(state)
-            }
+    IllustratedPlate(art = art, label = "Today’s desk", headline = { HeroHeadline(state) }) {
+        if (!state.loading && state.readyWords > 0) {
             Spacer(Modifier.height(16.dp))
-            HeroAction(state, onStartSession, onOpenLibrary)
+            TodayFigures(state)
         }
+        Spacer(Modifier.height(16.dp))
+        HeroAction(state, onStartSession, onOpenLibrary)
     }
 }
 
@@ -352,38 +328,37 @@ private fun estimatedMinutes(state: HomeUiState): Int =
  */
 @Composable
 private fun PractiseBento(state: HomeUiState, onStartSession: (StudyMode) -> Unit, modifier: Modifier = Modifier) {
-    val colors = WordkeepTheme.colors
     val flashcards = Activity(
-        art = Illustration.Flashcards,
+        art = StudyMode.FLASHCARDS.illustration,
         title = StudyMode.FLASHCARDS.title,
         body = "Recall the meaning, then rate how well you knew it.",
         enabled = state.hasSessionWork,
         disabledReason = "Nothing due right now",
-        plate = colors.plateCream,
+        plate = StudyMode.FLASHCARDS.plateColor(),
         onClick = { onStartSession(StudyMode.FLASHCARDS) },
     )
     val meaning = Activity(
-        art = Illustration.MeaningMatch,
+        art = StudyMode.MEANING_MATCH.illustration,
         title = StudyMode.MEANING_MATCH.title,
         body = "Pick the word that fits a definition.",
         enabled = state.canQuiz,
         disabledReason = "Needs at least 3 words with definitions",
-        plate = colors.plateSage,
+        plate = StudyMode.MEANING_MATCH.plateColor(),
         onClick = { onStartSession(StudyMode.MEANING_MATCH) },
     )
     val spelling = Activity(
-        art = Illustration.ListenAndSpell,
+        art = StudyMode.LISTEN_AND_SPELL.illustration,
         title = StudyMode.LISTEN_AND_SPELL.title,
         body = "Hear the word, then type it.",
         enabled = state.canSpell,
         disabledReason = "Needs a word with a definition",
-        plate = colors.plateOchre,
+        plate = StudyMode.LISTEN_AND_SPELL.plateColor(),
         onClick = { onStartSession(StudyMode.LISTEN_AND_SPELL) },
     )
     // While the desk is loading, keep the usual descriptions instead of flashing "not available" reasons.
     val loading = state.loading
     BoxWithConstraints(modifier) {
-        val stackPair = maxWidth < 330.dp || LocalDensity.current.fontScale >= LARGE_TEXT_SCALE
+        val stackPair = maxWidth < 330.dp || isLargeText()
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SectionLabel("Practise")
             WideTile(flashcards, loading, artFirst = true)
@@ -509,21 +484,6 @@ private fun LookUpField(onLookUp: (String) -> Unit) {
     )
 }
 
-/** A short ochre rule under the hero label, like a printer's ornament. Decorative only. */
-@Composable
-private fun AccentRule(modifier: Modifier = Modifier) {
-    Box(
-        modifier
-            .size(width = 28.dp, height = 2.dp)
-            .background(WordkeepTheme.colors.accent),
-    )
-}
-
-/** Plates have no border, except in high-contrast mode where every boundary must be visible. */
-@Composable
-private fun plateBorder(): BorderStroke? =
-    if (WordkeepTheme.accessibility.highContrast) BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant) else null
-
 /** A quiet reminder of the app's data promise, at the foot of the landing page. */
 @Composable
 private fun PrivacySeal() {
@@ -546,5 +506,3 @@ private fun PrivacySeal() {
     }
 }
 
-/** Font scale at which illustrations step aside so text keeps the full width. */
-private const val LARGE_TEXT_SCALE = 1.6f

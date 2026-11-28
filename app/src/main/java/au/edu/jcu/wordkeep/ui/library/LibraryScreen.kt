@@ -42,6 +42,7 @@ import au.edu.jcu.wordkeep.domain.StarterPack
 import au.edu.jcu.wordkeep.domain.model.FetchState
 import au.edu.jcu.wordkeep.domain.model.StudyWord
 import au.edu.jcu.wordkeep.ui.components.EmptyState
+import au.edu.jcu.wordkeep.ui.components.Illustration
 import au.edu.jcu.wordkeep.ui.components.Hairline
 import au.edu.jcu.wordkeep.ui.components.MasteryTag
 import au.edu.jcu.wordkeep.ui.components.PaperCard
@@ -131,6 +132,7 @@ fun LibraryScreen(
             item(key = "empty") {
                 EmptyState(
                     icon = Icons.Rounded.LibraryAdd,
+                    art = if (state.totalWords == 0) Illustration.EmptyLibrary else null,
                     title = if (state.totalWords == 0) "No words yet" else "No matches",
                     body = if (state.totalWords == 0) "Search the dictionary above, or add the starter list."
                     else "Try another filter or search term.",

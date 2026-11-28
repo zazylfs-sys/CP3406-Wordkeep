@@ -15,7 +15,7 @@ MASTERS = ROOT / "assets/illustrations/masters"
 OUT = ROOT / "app/src/main/res/drawable-nodpi"
 
 # Longest side in px. 720 px covers a 240 dp slot at 3x density; small art needs less.
-SIZES = {"illus_offline": 320, "illus_onboarding": 900}
+SIZES = {"illus_offline": 560, "illus_onboarding": 900}
 DEFAULT_SIZE = 720
 
 

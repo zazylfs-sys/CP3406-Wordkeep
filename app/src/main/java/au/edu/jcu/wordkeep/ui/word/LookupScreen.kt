@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import au.edu.jcu.wordkeep.data.audio.PlaybackState
 import au.edu.jcu.wordkeep.data.repository.LookupResult
 import au.edu.jcu.wordkeep.ui.components.EmptyState
+import au.edu.jcu.wordkeep.ui.components.Illustration
 import au.edu.jcu.wordkeep.ui.components.Hairline
 import au.edu.jcu.wordkeep.ui.components.PhoneticText
 import au.edu.jcu.wordkeep.ui.components.PronounceButton
@@ -115,7 +116,7 @@ fun LookupScreen(
                     )
                     is LookupResult.Unavailable -> when (result.reason) {
                         LookupResult.Reason.OFFLINE_MODE -> EmptyState(
-                            icon = Icons.Rounded.CloudOff,
+                            art = Illustration.Offline,
                             title = "Offline mode is on",
                             body = "Looking up “$query” would send it to dictionaryapi.dev. Turn offline mode off in Settings if you want to.",
                             actionLabel = "Open settings",

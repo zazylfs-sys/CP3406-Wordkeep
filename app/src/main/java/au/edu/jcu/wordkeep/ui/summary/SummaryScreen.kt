@@ -4,9 +4,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -21,6 +22,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,7 +41,8 @@ import au.edu.jcu.wordkeep.domain.model.StudyMode
 import au.edu.jcu.wordkeep.domain.model.Word
 import au.edu.jcu.wordkeep.domain.stats.StatsCalculator
 import au.edu.jcu.wordkeep.ui.components.Hairline
-import au.edu.jcu.wordkeep.ui.components.PaperCard
+import au.edu.jcu.wordkeep.ui.components.IllustratedPlate
+import au.edu.jcu.wordkeep.ui.components.Illustration
 import au.edu.jcu.wordkeep.ui.components.SectionLabel
 import au.edu.jcu.wordkeep.ui.components.StatFigure
 import au.edu.jcu.wordkeep.ui.navigation.SummaryRoute
@@ -115,25 +118,39 @@ fun SummaryScreen(
             .widthIn(max = 720.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Column {
-            SectionLabel(state.mode.title)
-            Text(
-                "Session complete",
-                style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(
-                "That’s all for now. Spacing practice out is what moves words into long-term memory.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        PaperCard(Modifier.fillMaxWidth()) {
-            // FlowRow: with very large text the figures wrap as whole units instead of squeezing.
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatFigure(state.answered.toString(), "answered")
-                StatFigure(state.accuracy?.let { "$it%" } ?: "—", "correct first time")
-                StatFigure(formatDuration(state.seconds), "time")
+        IllustratedPlate(
+            art = Illustration.DayComplete,
+            label = state.mode.title,
+            headline = {
+                Text(
+                    "Session complete",
+                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.semantics { heading() },
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "That’s all for now. Spacing practice out is what moves words into long-term memory.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+        ) {
+            Spacer(Modifier.height(16.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                // FlowRow: with very large text the figures wrap as whole units instead of squeezing.
+                FlowRow(
+                    Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(28.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    StatFigure(state.answered.toString(), "answered")
+                    StatFigure(state.accuracy?.let { "$it%" } ?: "—", "correct first time")
+                    StatFigure(formatDuration(state.seconds), "time")
+                }
             }
         }
         if (state.missedWords.isNotEmpty()) {

@@ -112,13 +112,17 @@ fun NoticeBanner(
     }
 }
 
-/** Shown when a screen has nothing to show yet, with one clear next step. */
+/**
+ * Shown when a screen has nothing to show yet, with one clear next step. Calm, expected states use a
+ * brand [art] illustration; errors keep a plain [icon].
+ */
 @Composable
 fun EmptyState(
-    icon: ImageVector,
     title: String,
     body: String,
     modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    art: Illustration? = null,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
@@ -129,12 +133,16 @@ fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(40.dp),
-        )
+        if (art != null) {
+            BrandIllustration(art, Modifier.size(if (isLargeText()) 120.dp else 184.dp))
+        } else if (icon != null) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(40.dp),
+            )
+        }
         Text(
             title,
             style = MaterialTheme.typography.titleLarge,

@@ -118,7 +118,7 @@ fun WordDetailScreen(
         ) {
             when (state) {
                 WordDetailUiState.Loading -> CircularProgressIndicator(Modifier.padding(48.dp))
-                WordDetailUiState.Missing -> EmptyState(Icons.Rounded.SearchOff, "Word not found", "It may have been deleted.")
+                WordDetailUiState.Missing -> EmptyState("Word not found", "It may have been deleted.", icon = Icons.Rounded.SearchOff)
                 is WordDetailUiState.Ready -> WordDetailContent(
                     state.word, state.today, playback, onPronounce, onSaveNote, onRetryDownload,
                     onResetClick = { confirmReset = true },

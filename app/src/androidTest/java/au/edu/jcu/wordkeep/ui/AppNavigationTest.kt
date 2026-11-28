@@ -40,8 +40,8 @@ class AppNavigationTest {
     fun finishOnboardingWithoutStarterList() {
         hilt.inject()
         compose.waitUntilAtLeastOneExists(hasText("Start learning"), 10_000)
-        compose.onNodeWithText("Add the starter list").performClick()
-        compose.onNodeWithText("Start learning").performClick()
+        compose.onNodeWithText("Add the starter list").performScrollTo().performClick()
+        compose.onNodeWithText("Start learning").performScrollTo().performClick()
         compose.waitUntilAtLeastOneExists(hasText("TODAY’S DESK"), 10_000)
     }
 

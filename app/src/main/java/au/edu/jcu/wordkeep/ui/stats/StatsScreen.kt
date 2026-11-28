@@ -15,11 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -46,6 +45,8 @@ import au.edu.jcu.wordkeep.ui.components.BarDatum
 import au.edu.jcu.wordkeep.ui.components.DataTable
 import au.edu.jcu.wordkeep.ui.components.EmptyState
 import au.edu.jcu.wordkeep.ui.components.Hairline
+import au.edu.jcu.wordkeep.ui.components.IllustratedPlate
+import au.edu.jcu.wordkeep.ui.components.Illustration
 import au.edu.jcu.wordkeep.ui.components.LegendItem
 import au.edu.jcu.wordkeep.ui.components.PaperCard
 import au.edu.jcu.wordkeep.ui.components.SectionLabel
@@ -82,7 +83,7 @@ fun StatsScreen(state: StatsUiState, wideLayout: Boolean, onOpenWord: (Long) -> 
             StatsUiState.Loading -> CircularProgressIndicator()
             is StatsUiState.Ready -> if (state.stats.isEmpty) {
                 EmptyState(
-                    icon = Icons.Rounded.Insights,
+                    art = Illustration.Growth,
                     title = "No progress yet",
                     body = "Statistics appear after your first session. They are worked out on this device and never uploaded.",
                 )
@@ -111,16 +112,38 @@ fun StatsScreen(state: StatsUiState, wideLayout: Boolean, onOpenWord: (Long) -> 
     }
 }
 
+/** The overview plate: saved words as the headline, the growing-books illustration, the other figures below. */
 @Composable
 private fun Overview(stats: LearningStats) {
-    PaperCard(Modifier.fillMaxWidth()) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatFigure(stats.mastery.total.toString(), "words saved")
-            StatFigure(stats.overallAccuracy?.let { "$it%" } ?: "—", "answers correct")
-            StatFigure(stats.activeDaysLast30.toString(), "days studied, last 30")
-            StatFigure(stats.studyMinutes.toString(), "minutes in total")
+    IllustratedPlate(
+        art = Illustration.Growth,
+        label = "So far",
+        headline = {
+            Text(
+                stats.mastery.total.toString(),
+                style = MaterialTheme.typography.displayLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text("words saved", style = MaterialTheme.typography.titleLarge)
+        },
+    ) {
+        Spacer(Modifier.height(16.dp))
+        Surface(
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            FlowRow(
+                Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(28.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                StatFigure(stats.overallAccuracy?.let { "$it%" } ?: "—", "answers correct")
+                StatFigure(stats.activeDaysLast30.toString(), "days studied, last 30")
+                StatFigure(stats.studyMinutes.toString(), "minutes in total")
+            }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(10.dp))
         Text(
             "Days studied counts any day you practised. There is no streak to lose.",
             style = MaterialTheme.typography.bodySmall,

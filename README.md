@@ -30,7 +30,7 @@ Landscape and tablets use a navigation rail and two columns:
 
 ![Landscape progress](docs/screenshots/landscape-progress.png)
 
-*Screenshots are from a Pixel-size emulator (API 36) using live dictionary data on 25 Nov 2026.*
+*Screenshots are from a Pixel-size emulator (API 36) using live dictionary data on 28 Nov 2026.*
 
 ---
 
@@ -40,12 +40,12 @@ Landscape and tablets use a navigation rail and two columns:
 
 | Screen | What it does |
 |---|---|
-| **First run: "How Wordkeep handles your data"** | Explains, before anything is sent, which two services are contacted and what never leaves the phone. The learner chooses whether to add the starter list and whether to start in offline mode. |
-| **Today (landing page)** | Today's desk: reviews due, new words available (capped per day), answers today. One button starts the day's review. Shortcuts to the three activities (disabled with a reason when they can't run), a dictionary search, download and offline notices. |
+| **First run: "How Wordkeep handles your data"** | Opens with the brand illustration, then explains, before anything is sent, which two services are contacted and what never leaves the phone. The learner chooses whether to add the starter list and whether to start in offline mode. |
+| **Today (landing page)** | An illustrated hero card for today's desk: reviews due, new words available (capped per day), answers today, and one button that starts the day's review. Its illustration follows the day (work waiting, up to date, no words yet). A dictionary search sits directly below. The three activities form a bento grid of illustrated tiles, each disabled with a reason when it can't run. Download and offline notices. |
 | **Activity: Flashcard review** | Recall the meaning, flip the card (3D flip, or a fade with reduced motion), grade *Again / Hard / Good / Easy*. Each button shows the interval it will schedule. Cards graded *Again* come back once at the end of the session as practice. |
 | **Activity: Meaning match** | Pick the word that fits a definition. The definition has the answer masked ("To subject to ____"). Distractors are look-alike words from the Datamuse API plus words from the learner's own deck, so recognising the word's shape is not enough. |
 | **Activity: Listen & spell** | Hear the word (human recording, or the device voice), type it. A near miss gets one more try; afterwards the missed letters are underlined and also listed in text ("Check letter 7 (n)"). British and American spellings are both accepted. |
-| **Session summary** | Answered, correct first time, time taken, words worth another look. It ends with "That's all for now" rather than offering another round. |
+| **Session summary** | An illustrated "Session complete" card with answered, correct first time, time taken, words worth another look. It ends with "That's all for now" rather than offering another round. |
 | **Words (library)** | Search saved words, filter by New / Learning / Mastered / Starter list, or look a new word up in the dictionary. |
 | **Dictionary look-up** | Shows the entry (IPA, recording, numbered senses, examples) *before* saving, with source attribution. |
 | **Word detail** | Senses, a personal "memory hook" note (shown on the flashcard back), SM-2 progress, reset progress, delete word. |
@@ -141,6 +141,7 @@ MainActivity ── WordkeepApp (NavigationSuiteScaffold: bar on phones, rail �
 
 ### Compose and Material 3
 
+- **Illustration system**: nine original engraved-style illustrations in one palette (ink green, sage, cream, ochre). They are bundled as transparent WebP in `res/drawable-nodpi`, so they work offline. Masters, prompts, the art direction and the export script are in [`assets/illustrations/`](assets/illustrations/README.md). Every activity keeps one illustration and one plate colour (its Today tile and its session header). Illustrations are decorative (hidden from TalkBack), dim slightly in dark mode, and step aside at very large text sizes. Calm empty states use them; error states keep plain icons.
 - Custom "print lexicon" theme: Literata (serif headwords) and IBM Plex Sans (UI, with full IPA coverage), both bundled under the SIL OFL. It has light, dark and high-contrast colour schemes. Dynamic colour is off on purpose, so semantic colours keep their tested contrast.
 - Components used: `NavigationSuiteScaffold`, `SingleChoiceSegmentedButtonRow`, `FilterChip`, `TopAppBar`, `AlertDialog`, `Snackbar`, `LinearProgressIndicator`. Charts are drawn on a `Canvas`.
 - Animation: `graphicsLayer` card flip, `AnimatedContent` between questions, `AnimatedVisibility` for feedback, an animated chart entry and a pulsing play icon. All of them fall back to fades or static states with reduced motion.
@@ -162,7 +163,7 @@ MainActivity ── WordkeepApp (NavigationSuiteScaffold: bar on phones, rail �
 | `AccessibilityChecksTest` | Instrumented (Compose + ATF) | Google Accessibility Test Framework on every main screen in light and dark themes |
 | `AppNavigationTest` | Instrumented (Hilt end-to-end) | Real NavHost + ViewModels + in-memory Room with faked APIs: look up → save → study → summary → Today, tab back stacks, Today does not restore a left screen, not-found state |
 
-**Latest run (25 Nov 2026, Pixel-size emulator, API 36):** 75 JVM tests and 37 instrumented tests pass. Android Lint reports 0 errors, and the release build assembles.
+**Latest run (28 Nov 2026, Pixel-size emulator, API 36):** 75 JVM tests and 37 instrumented tests pass. Android Lint reports 0 errors, and the release build assembles.
 
 ```bash
 ./gradlew testDebugUnitTest              # JVM tests
@@ -196,7 +197,8 @@ Known limitations, kept visible on purpose (also tracked as GitHub issues labell
 - Scheduling: P. A. Wozniak, SuperMemo SM-2 algorithm, 1990.
 - Fonts: Literata and IBM Plex Sans, SIL Open Font License 1.1 (`docs/licenses/`).
 - Design direction: the palette and typography were developed with GenAI assistance (see the GenAI declaration).
+- Illustrations: original images generated for this project with the image tool in OpenAI Codex CLI (28 Nov 2026) from the prompts in `assets/illustrations/prompts/`. No reference images or existing artworks were used.
 
 ## GenAI use
 
-Generative AI tools (Claude Code, OpenAI Codex, Google Antigravity) were used in this assessment, as permitted, and are acknowledged in the separate *Declaration of AI-Generated Material* submitted with the assignment. Commits made with AI assistance carry a `Co-Authored-By` trailer.
+Generative AI tools (Claude Code, OpenAI Codex, Google Antigravity) were used in this assessment, as permitted, and are acknowledged in the separate *Declaration of AI-Generated Material* submitted with the assignment. Commits made with AI assistance carry a `Co-Authored-By` trailer. All nine illustrations in `assets/illustrations/` are AI-generated images; their full prompts are kept next to them.

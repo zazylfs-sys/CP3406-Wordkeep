@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Accessibility
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -39,8 +43,14 @@ import androidx.lifecycle.viewModelScope
 import au.edu.jcu.wordkeep.data.repository.WordRepository
 import au.edu.jcu.wordkeep.data.settings.SettingsRepository
 import au.edu.jcu.wordkeep.domain.StarterPack
+import au.edu.jcu.wordkeep.ui.components.AccentRule
+import au.edu.jcu.wordkeep.ui.components.BrandIllustration
+import au.edu.jcu.wordkeep.ui.components.Illustration
 import au.edu.jcu.wordkeep.ui.components.PaperCard
 import au.edu.jcu.wordkeep.ui.components.SwitchRow
+import au.edu.jcu.wordkeep.ui.components.isLargeText
+import au.edu.jcu.wordkeep.ui.components.plateBorder
+import au.edu.jcu.wordkeep.ui.theme.WordkeepTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -83,16 +93,7 @@ fun OnboardingScreen(onStart: (addStarterPack: Boolean, offlineMode: Boolean) ->
             .widthIn(max = 640.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        Text(
-            "Wordkeep",
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.semantics { heading() },
-        )
-        Text(
-            "Build the academic vocabulary your lectures and readings use, with short, spaced practice.",
-            style = MaterialTheme.typography.titleMedium,
-        )
+        WelcomePlate()
         Text("Before you start, here is how Wordkeep handles your data.", style = MaterialTheme.typography.bodyMedium)
 
         Promise(Icons.Rounded.PhoneAndroid, "Your progress stays on this phone", "No account, no cloud backup, no analytics, no location.")
@@ -134,6 +135,42 @@ fun OnboardingScreen(onStart: (addStarterPack: Boolean, offlineMode: Boolean) ->
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+/** The brand key visual: the book that grows letters, with the name and the one-line promise. */
+@Composable
+private fun WelcomePlate() {
+    Surface(
+        color = WordkeepTheme.colors.plateHero,
+        shape = RoundedCornerShape(28.dp),
+        border = plateBorder(),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            BrandIllustration(
+                Illustration.Welcome,
+                Modifier
+                    .fillMaxWidth()
+                    .height(if (isLargeText()) 140.dp else 228.dp),
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "Wordkeep",
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.semantics { heading() },
+            )
+            AccentRule(Modifier.padding(vertical = 10.dp))
+            Text(
+                "Build the academic vocabulary your lectures and readings use, with short, spaced practice.",
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
