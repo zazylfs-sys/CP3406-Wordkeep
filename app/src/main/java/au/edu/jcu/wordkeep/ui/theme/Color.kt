@@ -122,6 +122,13 @@ data class WordkeepColors(
     val mastered: Color,
     val newWord: Color,
     val chartTrack: Color,
+    /** Tinted "plates" that carry brand illustrations: sage, cream and ochre washes of the paper. */
+    val plateHero: Color,
+    val plateCream: Color,
+    val plateSage: Color,
+    val plateOchre: Color,
+    /** Ochre accent for small decorative rules only; never used for text. */
+    val accent: Color,
 )
 
 val LightExtraColors = WordkeepColors(
@@ -134,6 +141,11 @@ val LightExtraColors = WordkeepColors(
     mastered = Color(0xFF204E2E),
     newWord = Color(0xFF663354),
     chartTrack = Color(0xFFE3DCCF),
+    plateHero = Color(0xFFE4EADD),
+    plateCream = Color(0xFFF4EDDC),
+    plateSage = Color(0xFFDCE5D5),
+    plateOchre = Color(0xFFF2E6C8),
+    accent = Color(0xFFB8862E),
 )
 
 val DarkExtraColors = WordkeepColors(
@@ -146,6 +158,11 @@ val DarkExtraColors = WordkeepColors(
     mastered = Color(0xFF8ED19E),
     newWord = Color(0xFFE2A8CD),
     chartTrack = Color(0xFF313430),
+    plateHero = Color(0xFF1B2921),
+    plateCream = Color(0xFF25241E),
+    plateSage = Color(0xFF1E2A23),
+    plateOchre = Color(0xFF2C271B),
+    accent = Color(0xFFD9AE58),
 )
 
 val LightHighContrastExtraColors = LightExtraColors.copy(
@@ -155,6 +172,10 @@ val LightHighContrastExtraColors = LightExtraColors.copy(
     learning = Color(0xFF2B2B2B),
     newWord = Color(0xFF4A1A3A),
     chartTrack = Color(0xFFCCCCCC),
+    plateHero = Color(0xFFF2F2F2),
+    plateCream = Color(0xFFF5F5F5),
+    plateSage = Color(0xFFF5F5F5),
+    plateOchre = Color(0xFFF5F5F5),
 )
 
 val DarkHighContrastExtraColors = DarkExtraColors.copy(
@@ -164,4 +185,8 @@ val DarkHighContrastExtraColors = DarkExtraColors.copy(
     learning = Color(0xFFE5E5E5),
     newWord = Color(0xFFF5C6E4),
     chartTrack = Color(0xFF3A3A3A),
+    plateHero = Color(0xFF111111),
+    plateCream = Color(0xFF0D0D0D),
+    plateSage = Color(0xFF0D0D0D),
+    plateOchre = Color(0xFF0D0D0D),
 )
